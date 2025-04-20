@@ -11,7 +11,7 @@ import numpy as np
 data_dir = './dechets_classes'
 IMG_SIZE = 128
 BATCH_SIZE = 32
-EPOCHS = 10
+EPOCHS = 20
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 # Transforms
