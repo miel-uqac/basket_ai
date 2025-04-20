@@ -32,19 +32,17 @@ test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=False)
 
 num_classes = len(train_dataset.classes)
 
-# VGG16 modifié
 def build_vgg16():
     model = models.vgg16(pretrained=True)
+
+    # Geler les couches convolutives
     for param in model.features.parameters():
         param.requires_grad = False
 
-    model.classifier = nn.Sequential(
-        nn.Flatten(),
-        nn.Linear(25088, 128),
-        nn.ReLU(),
-        nn.Dropout(0.5),
-        nn.Linear(128, num_classes)
-    )
+    # Remplacer uniquement la dernière couche du classifier (classique pour VGG16)
+    num_features = model.classifier[6].in_features
+    model.classifier[6] = nn.Linear(num_features, num_classes)
+
     return model.to(device)
 
 # Fonction d'entraînement/évaluation
@@ -116,4 +114,4 @@ def train_and_evaluate(model, name):
 
 # Lancer l'entraînement
 model = build_vgg16()
-train_and_evaluate(model, "VGG16 Transfer Learning")
+train_and_evaluate(model, "VGG16 ourdata")

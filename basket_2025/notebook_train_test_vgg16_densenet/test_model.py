@@ -19,36 +19,18 @@ video_config = picam2.create_video_configuration(main={"size": (640, 480), "form
 picam2.configure(video_config)
 picam2.start()
 
-# Variables pour le calcul du mouvement
+
 prev_frame = None
 motion_threshold = 6000  # Valeur seuil pour détecter le mouvement
 ltime = time.time()
 photo_taken_time = 0  
-photo_delay = 0.05  # Temps d'attente en secondes avant de permettre un nouveau mode burst
+photo_delay = 0.05  
 
 # Paramètres du mode burst
 burst_count = 5  # Nombre d'images à prendre en rafale
 burst_delay = 0.001  # Délai entre chaque prise d'image en rafale (en secondes)
 
 picam2.set_controls({"ExposureTime": 1500})
-
-
-
-
-
-"""
-# Transformation pour VGG16
-vgg16_transform = transforms.Compose([
-    transforms.Resize((224, 224)),
-    transforms.ToTensor(),
-    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-])
-
-model_vgg16 = models.vgg16(pretrained=True)
-num_features = model_vgg16.classifier[6].in_features
-model_vgg16.classifier[6] = nn.Linear(num_features, 2)
-model_vgg16.load_state_dict(torch.load("model_VGG16.pth"))
-"""
 
 # Transformation pour DenseNet121
 densenet121_transform = transforms.Compose([
@@ -61,13 +43,29 @@ model_densenet121.classifier = nn.Linear(model_densenet121.classifier.in_feature
 model_densenet121.load_state_dict(torch.load("densenet_ourdata.pth"))
 model_densenet121.eval()
 
+# Transformation pour VGG16
+vgg16_transform = transforms.Compose([
+    transforms.Resize((128, 128)), #entraine en 128 par 128 et non en 224 par 224 comme densenet, a modifie si on change les parametres d'entrainement
+    transforms.ToTensor(),
+    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+])
+model_vgg = models.vgg16(pretrained=True)
+model_vgg.classifier[6] = nn.Linear(model_vgg.classifier[6].in_features, 4)
+model_vgg.load_state_dict(torch.load("vgg16_ourdata.pth"))
+model_vgg.eval()
+
 class_map = {0: "autres", 1: "bouteilles", 2: "canettes", 3: "rien"}
 
-nom_model= input("Selectionner votre modele : taper 'vgg16' ou 'densenet', ps : VGG16 n'est pas encore disponible")
+nom_model= input("Selectionner votre modele : taper 'vgg16' ou 'densenet' \n")
 
 if nom_model=="densenet":
     model=model_densenet121
     transform=densenet121_transform
+if nom_model=="vgg16":
+    model=model_vgg
+    transform=vgg16_transform
+else:
+    raise ValueError("Modele non reconnu, taper 'vgg16' ou 'densenet'\n")
 while True :
        
     current_frame = picam2.capture_array("main")
@@ -114,7 +112,7 @@ while True :
                 # Affichage de la prédiction
                 print(f"Prédiction : {class_map[indice]}")
                 time.sleep(20)
-                print("prediction prete")
+                print("nouvelle prediction prete")
             else:
                 print("Mouvement détecté mais photo déjà prise récemment.")
 
